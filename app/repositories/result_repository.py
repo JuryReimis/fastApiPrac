@@ -5,13 +5,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.result import Result
 from app.schemas.get_dynamics_params import GetDynamicsParamsDateIntervalSchema, GetDynamicsParamsSchema
-from app.schemas.result import ResultSchema
+from app.schemas.last_dates import LastDatesSchema
+from app.schemas.result import ResultSchema, ResultListSchema
 
 
 class ResultRepository:
 
     @staticmethod
-    async def get_last_dates(session: AsyncSession, date_count: int) -> list[date]:
+    async def get_last_dates(session: AsyncSession, date_count: int) -> LastDatesSchema:
         distinct_dates_query = (
             select(Result.date)
             .distinct()
@@ -22,13 +23,13 @@ class ResultRepository:
         dates = []
         for result in await session.execute(distinct_dates_query):
             dates.append(result[0])
-        return dates
+        return LastDatesSchema(dates=dates)
 
     @staticmethod
     async def get_dynamics_by_filters(
             session: AsyncSession,
             params: GetDynamicsParamsDateIntervalSchema
-    ) -> list[ResultSchema]:
+    ) -> ResultListSchema:
         query = select(Result).where(
             and_(
                 Result.date >= params.start_date,
@@ -42,10 +43,13 @@ class ResultRepository:
         ).order_by(Result.date.desc())
         results = await session.execute(query)
         records = results.scalars().all()
-        return [ResultSchema.model_validate(record, from_attributes=True) for record in records]
+        results_schema = ResultListSchema(
+            results=[ResultSchema.model_validate(record, from_attributes=True) for record in records]
+        )
+        return results_schema
 
     @staticmethod
-    async def get_last_trade_records(session: AsyncSession, params: GetDynamicsParamsSchema):
+    async def get_last_trade_records(session: AsyncSession, params: GetDynamicsParamsSchema) -> ResultListSchema:
         subquery = select(func.max(Result.date)).scalar_subquery()
         query = (
             select(Result)
@@ -60,4 +64,7 @@ class ResultRepository:
             .order_by(Result.date.desc())
         )
         results = await session.execute(query)
-        return [ResultSchema.model_validate(result, from_attributes=True) for result in results.scalars().all()]
+        results_schema = ResultListSchema(
+            results=[ResultSchema.model_validate(result, from_attributes=True) for result in results.scalars().all()]
+        )
+        return results_schema
