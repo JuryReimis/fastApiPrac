@@ -13,8 +13,8 @@ DB_HOST = os.getenv('DB_HOST')
 DB_PORT = os.getenv('DB_PORT')
 
 
-REDIS_HOST = 'localhost'
-REDIS_PORT = 6379
+REDIS_HOST = os.getenv('REDIS_HOST')
+REDIS_PORT = os.getenv('REDIS_PORT')
 
 
 DATABASE_URL = f"postgresql+psycopg://{DB_USER}:{DB_PASS}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
