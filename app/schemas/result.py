@@ -30,3 +30,8 @@ class ResultSchema(BaseModel):
     created_on: datetime
 
     updated_on: datetime
+
+
+class ResultListSchema(BaseModel):
+
+    results: Annotated[list[ResultSchema], Field(title="Список результатов запроса")]
