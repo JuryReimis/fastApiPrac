@@ -1,4 +1,4 @@
-from app import config
+from app.config import settings
 from app.cache.redis_cache import RedisCache
 from app.schemas.redis import RedisCacheConfigSchema
 
@@ -9,8 +9,8 @@ class RedisCacheService:
     @classmethod
     def init_cache(cls):
         cache_service = RedisCache(config=RedisCacheConfigSchema(
-            host=config.REDIS_HOST,
-            port=config.REDIS_PORT
+            host=settings.REDIS_HOST,
+            port=settings.REDIS_PORT
         ))
         cls.cache = cache_service
         return cls.cache
