@@ -1,8 +1,10 @@
 from datetime import date
 from typing import Annotated
 
-from fastapi import Query, APIRouter, Depends
+from fastapi import Query, APIRouter, Depends, HTTPException
+from pydantic_core import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.status import HTTP_422_UNPROCESSABLE_ENTITY
 
 from app.cache.cache_init import RedisCacheService
 from app.depends.trading_depends import get_dynamics_params
@@ -17,8 +19,8 @@ router = APIRouter(prefix='')
 SessionDep = Annotated[AsyncSession, Depends(get_async_session)]
 DynamicsParamsDep = Annotated[GetDynamicsParamsSchema, Depends(get_dynamics_params)]
 
-
 cache_service = RedisCacheService.get_cache_service()
+
 
 @router.get(
     '/last-trading-dates',
@@ -31,7 +33,7 @@ async def get_last_trading_dates(
             title="Количество последних торговых дней",
             description="Ожидается количество торговых дней, которое необходимо отобразить в отчете",
             gt=0,
-            example=1,
+            examples=[1],
         )] = None
 ) -> LastDatesSchema:
     repository = ResultRepository()
@@ -48,19 +50,23 @@ async def get_dynamics(
         session: SessionDep,
         start_date: Annotated[date, Query(
             description="Начальная дата в формате YYYY-MM-DD ",
-            example="2020-01-01"
+            examples=["2020-01-01"]
         )],
         end_date: Annotated[date, Query(
             description="Конечная дата в формате YYYY-MM-DD",
-            example="2025-01-01"
+            examples=["2025-01-01"]
         )],
         params: DynamicsParamsDep
 ) -> ResultListSchema:
-    params = GetDynamicsParamsDateIntervalSchema(
-        start_date=start_date,
-        end_date=end_date,
-        **params.model_dump()
-    )
+    try:
+        params = GetDynamicsParamsDateIntervalSchema(
+            start_date=start_date,
+            end_date=end_date,
+            **params.model_dump()
+        )
+    except ValidationError as errs:
+        raise HTTPException(detail=f"Ошибка при валидации входных данных, {errs.errors()[0].get('msg')}",
+                            status_code=HTTP_422_UNPROCESSABLE_ENTITY)
     repository = ResultRepository()
     records = await repository.get_dynamics_by_filters(session, params)
     return records
