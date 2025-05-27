@@ -1,5 +1,3 @@
-from datetime import date
-
 from sqlalchemy import select, and_, func
 from sqlalchemy.ext.asyncio import AsyncSession
 

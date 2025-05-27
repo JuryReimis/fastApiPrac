@@ -19,7 +19,6 @@ async def lifespan(app: FastAPI):
     scheduler.shutdown(wait=False)
 
 app = FastAPI(lifespan=lifespan)
-
 app.include_router(trading_views.router)
 
 if __name__ == "__main__":
